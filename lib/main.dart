@@ -134,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   margin: EdgeInsets.only(top: 15),
                   height: 50,
                   child: Center(
-                    child: average != 0
+                    child: createdLessons.length != 0
                         ? Text(
                             "Your average is : ${average.toStringAsFixed(2)}",
                             style: TextStyle(color: Colors.white, fontSize: 20),
@@ -217,6 +217,7 @@ class _MyHomePageState extends State<MyHomePage> {
       onDismissed: (direction) {
         setState(() {
           createdLessons.removeAt(index);
+          calculateAverage();
         });
       },
       child: Card(

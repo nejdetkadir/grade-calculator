@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:grade_calculator/model/lesson.dart';
+import 'dart:math' as math;
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -28,15 +28,19 @@ class _MyHomePageState extends State<MyHomePage> {
   double average = 0;
   int uniqID = 1;
   List<Lesson> createdLessons;
+  TextEditingController nameController;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    createdLessons = [
-      Lesson("Matematik", 4, 1, Colors.red),
-      Lesson("Matematik", 3, 1, Colors.orange)
-    ];
+    createdLessons = [];
+    nameController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -56,6 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Form(
                   key: formKey,
                   child: TextFormField(
+                    controller: nameController,
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.fact_check),
                       hintText: "Enter your score",
@@ -65,6 +70,25 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ),
+                    maxLength: 20,
+                    validator: (value) {
+                      if (value.length > 0) {
+                        return null;
+                      } else
+                        return "Can not assign empty value!";
+                    },
+                    onSaved: (newValue) {
+                      setState(() {
+                        createdLessons.add(
+                          Lesson(newValue, selectedCourseGrade,
+                              selectedCourseCredit, randomColor()),
+                        );
+                        selectedCourseCredit = 1;
+                        selectedCourseGrade = 4;
+                        nameController.text = "";
+                        calculateAverage();
+                      });
+                    },
                   ),
                 ),
                 Container(
@@ -112,7 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Center(
                     child: average != 0
                         ? Text(
-                            "Your average is : $average",
+                            "Your average is : ${average.toStringAsFixed(2)}",
                             style: TextStyle(color: Colors.white, fontSize: 20),
                           )
                         : Text(
@@ -137,7 +161,9 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          debugPrint("onPressed:floatingActionButton");
+          if (formKey.currentState.validate()) {
+            formKey.currentState.save();
+          }
         },
         child: Icon(Icons.add),
         elevation: 12,
@@ -184,6 +210,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _myListBuilder(BuildContext context, int index) {
     uniqID++;
+    calculateAverage();
     return Dismissible(
       key: Key(uniqID.toString()),
       direction: DismissDirection.startToEnd,
@@ -193,19 +220,24 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       },
       child: Card(
-        margin: EdgeInsets.symmetric(vertical: 5),
-        elevation: 8,
-        color: createdLessons[index].color,
-        child: ListTile(
-          title: Text(createdLessons[index].name),
-          subtitle: Text(
-              "Course credit: ${createdLessons[index].courseCredit.toString()}"),
-          leading: CircleAvatar(
-            child: Text(createdLessons[index].name[0]),
-          ),
-          trailing: Text(checkCourseGrade(createdLessons[index].courseGrade)),
-        ),
-      ),
+          margin: EdgeInsets.symmetric(vertical: 5),
+          elevation: 8,
+          child: Container(
+            decoration: BoxDecoration(
+                border:
+                    Border.all(width: 2, color: createdLessons[index].color)),
+            child: ListTile(
+              title: Text(createdLessons[index].name),
+              subtitle: Text(
+                  "Course credit: ${createdLessons[index].courseCredit.toString()}"),
+              leading: CircleAvatar(
+                backgroundColor: createdLessons[index].color,
+                child: Text(createdLessons[index].name[0]),
+              ),
+              trailing:
+                  Text(checkCourseGrade(createdLessons[index].courseGrade)),
+            ),
+          )),
     );
   }
 
@@ -221,5 +253,28 @@ class _MyHomePageState extends State<MyHomePage> {
       0: "FF"
     };
     return data[grade];
+  }
+
+  Color randomColor() {
+    return Color.fromARGB(
+      255,
+      math.Random().nextInt(255),
+      math.Random().nextInt(255),
+      math.Random().nextInt(255),
+    );
+  }
+
+  calculateAverage() {
+    double totalGrade = 0;
+    double totalCredit = 0;
+
+    for (var l in createdLessons) {
+      var kredi = l.courseCredit;
+      var harfDegeri = l.courseGrade;
+      totalGrade = totalGrade + (harfDegeri * kredi);
+      totalCredit += kredi;
+    }
+
+    average = totalGrade / totalCredit;
   }
 }
